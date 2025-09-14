@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   CreditCard, 
   Plus, 
@@ -16,7 +17,26 @@ import {
   AlertTriangle,
   MoreVertical,
   Edit,
-  Trash2
+  Trash2,
+  Image as ImageIcon,
+  Tv,
+  Music,
+  Cloud,
+  Gamepad2,
+  Code,
+  Zap,
+  Mail,
+  Phone,
+  FileText,
+  Shield,
+  Globe,
+  Users,
+  Camera,
+  Video,
+  Headphones,
+  Cpu,
+  Database,
+  Monitor
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,10 +54,47 @@ interface Subscription {
   next_payment_date: string;
   is_active: boolean;
   description?: string;
+  icon_url?: string;
 }
+
+interface Profile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  default_currency: string;
+}
+
+const presetIcons = {
+  'netflix': Tv,
+  'spotify': Music,
+  'youtube': Video,
+  'prime': Tv,
+  'disney': Tv,
+  'hulu': Tv,
+  'apple-music': Headphones,
+  'dropbox': Cloud,
+  'google-drive': Cloud,
+  'adobe': Code,
+  'figma': Code,
+  'github': Code,
+  'slack': Mail,
+  'zoom': Video,
+  'office365': FileText,
+  'notion': FileText,
+  'trello': Calendar,
+  'steam': Gamepad2,
+  'xbox': Gamepad2,
+  'playstation': Gamepad2,
+  'aws': Database,
+  'vercel': Globe,
+  'mailchimp': Mail,
+  'canva': Camera,
+};
 
 const Dashboard = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const { user, signOut } = useAuth();
@@ -48,8 +105,27 @@ const Dashboard = () => {
       navigate('/auth');
       return;
     }
-    fetchSubscriptions();
+    fetchData();
   }, [user, navigate]);
+
+  const fetchData = async () => {
+    await Promise.all([fetchSubscriptions(), fetchProfile()]);
+  };
+
+  const fetchProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      setProfile(data);
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
 
   const fetchSubscriptions = async () => {
     try {
@@ -75,6 +151,24 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const renderSubscriptionIcon = (subscription: Subscription) => {
+    if (subscription.icon_url) {
+      if (subscription.icon_url.startsWith('http')) {
+        return (
+          <img 
+            src={subscription.icon_url} 
+            alt={subscription.name} 
+            className="h-8 w-8 rounded object-cover"
+          />
+        );
+      } else {
+        const IconComponent = presetIcons[subscription.icon_url as keyof typeof presetIcons] || CreditCard;
+        return <IconComponent className="h-6 w-6 text-primary" />;
+      }
+    }
+    return <CreditCard className="h-6 w-6 text-primary" />;
   };
 
   const deleteSubscription = async (id: string) => {
@@ -148,9 +242,19 @@ const Dashboard = () => {
             <div className="bg-gradient-primary p-2 rounded-xl shadow-premium">
               <CreditCard className="h-6 w-6 text-primary-foreground" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">SubscripSavvy</h1>
-              <p className="text-sm text-muted-foreground">Welcome back, {user?.email}</p>
+            <div className="flex items-center space-x-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={profile?.avatar_url || ''} alt="Profile" />
+                <AvatarFallback>
+                  {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h1 className="text-2xl font-bold">SubscripSavvy</h1>
+                <p className="text-sm text-muted-foreground">
+                  Welcome back, {profile?.full_name || user?.email}
+                </p>
+              </div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -168,6 +272,10 @@ const Dashboard = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign out
@@ -264,7 +372,7 @@ const Dashboard = () => {
                         <div key={subscription.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
                           <div className="flex items-center space-x-3">
                             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              <CreditCard className="h-5 w-5 text-primary" />
+                              {renderSubscriptionIcon(subscription)}
                             </div>
                             <div>
                               <p className="font-medium">{subscription.name}</p>
@@ -360,7 +468,7 @@ const Dashboard = () => {
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-2">
                           <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center">
-                            <CreditCard className="h-4 w-4 text-primary" />
+                            {renderSubscriptionIcon(subscription)}
                           </div>
                           <div>
                             <CardTitle className="text-base">{subscription.name}</CardTitle>

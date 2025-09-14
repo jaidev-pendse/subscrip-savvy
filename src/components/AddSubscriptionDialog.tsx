@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,12 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Plus } from 'lucide-react';
+import { CalendarIcon, Plus, Image as ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { SubscriptionIconSelector } from './SubscriptionIconSelector';
 
 interface AddSubscriptionDialogProps {
   open: boolean;
@@ -41,9 +42,34 @@ const billingCycles = [
   { value: 'daily', label: 'Daily' },
 ];
 
+const currencies = [
+  { code: 'USD', name: 'US Dollar', symbol: '$' },
+  { code: 'EUR', name: 'Euro', symbol: '€' },
+  { code: 'GBP', name: 'British Pound', symbol: '£' },
+  { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+  { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
+  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+  { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF' },
+  { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
+  { code: 'SEK', name: 'Swedish Krona', symbol: 'kr' },
+  { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$' },
+  { code: 'MXN', name: 'Mexican Peso', symbol: '$' },
+  { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
+  { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$' },
+  { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr' },
+  { code: 'KRW', name: 'South Korean Won', symbol: '₩' },
+  { code: 'TRY', name: 'Turkish Lira', symbol: '₺' },
+  { code: 'RUB', name: 'Russian Ruble', symbol: '₽' },
+  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
+  { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
+  { code: 'PLN', name: 'Polish Złoty', symbol: 'zł' },
+];
+
 export const AddSubscriptionDialog = ({ open, onOpenChange, onSubscriptionAdded }: AddSubscriptionDialogProps) => {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -52,8 +78,32 @@ export const AddSubscriptionDialog = ({ open, onOpenChange, onSubscriptionAdded 
     billing_cycle: 'monthly',
     category: 'other',
     website_url: '',
+    icon_url: '',
   });
   const [nextPaymentDate, setNextPaymentDate] = useState<Date>();
+
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+    }
+  }, [user]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('default_currency')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      if (data) {
+        setUserProfile(data);
+        setFormData(prev => ({ ...prev, currency: data.default_currency || 'USD' }));
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +140,7 @@ export const AddSubscriptionDialog = ({ open, onOpenChange, onSubscriptionAdded 
           category: formData.category,
           next_payment_date: format(nextPaymentDate, 'yyyy-MM-dd'),
           website_url: formData.website_url || null,
+          icon_url: formData.icon_url || null,
           is_active: true,
         });
 
@@ -105,10 +156,11 @@ export const AddSubscriptionDialog = ({ open, onOpenChange, onSubscriptionAdded 
         name: '',
         description: '',
         cost: '',
-        currency: 'USD',
+        currency: userProfile?.default_currency || 'USD',
         billing_cycle: 'monthly',
         category: 'other',
         website_url: '',
+        icon_url: '',
       });
       setNextPaymentDate(undefined);
       
@@ -145,15 +197,26 @@ export const AddSubscriptionDialog = ({ open, onOpenChange, onSubscriptionAdded 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <Label htmlFor="name">Service Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Netflix, Spotify, etc."
-                required
-                className="transition-smooth"
-              />
+              <div className="flex items-center space-x-4">
+                <div>
+                  <Label>Icon</Label>
+                  <SubscriptionIconSelector
+                    selectedIcon={formData.icon_url}
+                    onIconSelect={(iconUrl) => handleInputChange('icon_url', iconUrl)}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label htmlFor="name">Service Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="Netflix, Spotify, etc."
+                    required
+                    className="transition-smooth"
+                  />
+                </div>
+              </div>
             </div>
 
             <div>
@@ -180,12 +243,12 @@ export const AddSubscriptionDialog = ({ open, onOpenChange, onSubscriptionAdded 
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD ($)</SelectItem>
-                  <SelectItem value="EUR">EUR (€)</SelectItem>
-                  <SelectItem value="GBP">GBP (£)</SelectItem>
-                  <SelectItem value="CAD">CAD (C$)</SelectItem>
-                  <SelectItem value="AUD">AUD (A$)</SelectItem>
+                <SelectContent className="max-h-60">
+                  {currencies.map((currency) => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      {currency.symbol} {currency.name} ({currency.code})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
