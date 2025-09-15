@@ -15,6 +15,7 @@ export const ImageCropper = ({ isOpen, onClose, onCrop, imageSrc }: ImageCropper
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [scale, setScale] = useState([1]);
+  const [minScale, setMinScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -32,8 +33,9 @@ export const ImageCropper = ({ isOpen, onClose, onCrop, imageSrc }: ImageCropper
       setImageLoaded(true);
       
       // Calculate initial scale to fit the image in the crop area
-      const minScale = Math.max(CROP_SIZE / img.width, CROP_SIZE / img.height);
-      setScale([minScale]);
+      const computedMinScale = Math.max(CROP_SIZE / img.width, CROP_SIZE / img.height);
+      setMinScale(computedMinScale);
+      setScale([computedMinScale]);
       setPosition({ x: 0, y: 0 });
       drawCanvas();
     };
@@ -212,9 +214,9 @@ export const ImageCropper = ({ isOpen, onClose, onCrop, imageSrc }: ImageCropper
             <Label htmlFor="zoom-slider">Zoom</Label>
             <Slider
               id="zoom-slider"
-              min={0.5}
-              max={3}
-              step={0.1}
+              min={minScale}
+              max={minScale * 4}
+              step={Math.max(minScale / 10, 0.001)}
               value={scale}
               onValueChange={setScale}
               className="w-full"
