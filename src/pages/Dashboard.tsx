@@ -92,6 +92,13 @@ const presetIcons = {
   'canva': Camera,
 };
 
+const currencies = {
+  'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'INR': '₹', 'CAD': 'C$',
+  'AUD': 'A$', 'CHF': 'CHF', 'CNY': '¥', 'SEK': 'kr', 'NZD': 'NZ$',
+  'MXN': '$', 'SGD': 'S$', 'HKD': 'HK$', 'NOK': 'kr', 'KRW': '₩',
+  'TRY': '₺', 'RUB': '₽', 'BRL': 'R$', 'ZAR': 'R', 'PLN': 'zł'
+};
+
 const Dashboard = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -107,6 +114,18 @@ const Dashboard = () => {
     }
     fetchData();
   }, [user, navigate]);
+
+  // Refresh data when returning from settings
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) {
+        fetchProfile();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user]);
 
   const fetchData = async () => {
     await Promise.all([fetchSubscriptions(), fetchProfile()]);
@@ -193,6 +212,8 @@ const Dashboard = () => {
       });
     }
   };
+
+  const currencySymbol = currencies[profile?.default_currency as keyof typeof currencies] || '$';
 
   // Calculate statistics
   const totalMonthly = subscriptions
@@ -295,7 +316,7 @@ const Dashboard = () => {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${monthlyEquivalent.toFixed(2)}</div>
+              <div className="text-2xl font-bold">{currencySymbol}{monthlyEquivalent.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
                 Per month average
               </p>
@@ -308,7 +329,7 @@ const Dashboard = () => {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${yearlyEquivalent.toFixed(2)}</div>
+              <div className="text-2xl font-bold">{currencySymbol}{yearlyEquivalent.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
                 Annual spending
               </p>
@@ -382,7 +403,7 @@ const Dashboard = () => {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold">${subscription.cost}</p>
+                            <p className="font-semibold">{currencySymbol}{subscription.cost}</p>
                             <Badge variant="outline" className="text-xs">
                               {subscription.billing_cycle}
                             </Badge>
@@ -423,7 +444,7 @@ const Dashboard = () => {
                           <div key={category} className="space-y-2">
                             <div className="flex justify-between text-sm">
                               <span className="capitalize font-medium">{category}</span>
-                              <span>${amount.toFixed(2)}</span>
+                              <span>{currencySymbol}{amount.toFixed(2)}</span>
                             </div>
                             <Progress value={percentage} className="h-2" />
                           </div>
@@ -501,10 +522,10 @@ const Dashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-2xl font-bold">${subscription.cost}</span>
-                          <Badge>{subscription.billing_cycle}</Badge>
-                        </div>
+                         <div className="flex justify-between items-center">
+                           <span className="text-2xl font-bold">{currencySymbol}{subscription.cost}</span>
+                           <Badge>{subscription.billing_cycle}</Badge>
+                         </div>
                         <p className="text-sm text-muted-foreground">
                           Next payment: {new Date(subscription.next_payment_date).toLocaleDateString()}
                         </p>
