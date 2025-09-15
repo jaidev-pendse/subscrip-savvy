@@ -18,6 +18,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { ImageCropper } from '@/components/ImageCropper';
 
 const currencies = [
   { code: 'USD', name: 'US Dollar', symbol: '$' },
@@ -56,6 +57,8 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string>('');
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -121,18 +124,31 @@ const Settings = () => {
     }
   };
 
-  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
+
+    // Create a URL for the selected file
+    const imageUrl = URL.createObjectURL(file);
+    setSelectedImage(imageUrl);
+    setCropperOpen(true);
+    
+    // Reset the input
+    event.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!user) return;
 
     setUploading(true);
+    setCropperOpen(false);
+    
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
+      const fileName = `${user.id}/avatar.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from('user-avatars')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, croppedBlob, { upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -141,6 +157,11 @@ const Settings = () => {
         .getPublicUrl(fileName);
 
       await updateProfile({ avatar_url: data.publicUrl });
+      
+      toast({
+        title: 'Profile photo updated',
+        description: 'Your profile photo has been successfully updated.',
+      });
     } catch (error) {
       toast({
         title: 'Error uploading avatar',
@@ -149,6 +170,20 @@ const Settings = () => {
       });
     } finally {
       setUploading(false);
+      // Clean up the object URL
+      if (selectedImage) {
+        URL.revokeObjectURL(selectedImage);
+        setSelectedImage('');
+      }
+    }
+  };
+
+  const handleCropperClose = () => {
+    setCropperOpen(false);
+    // Clean up the object URL
+    if (selectedImage) {
+      URL.revokeObjectURL(selectedImage);
+      setSelectedImage('');
     }
   };
 
@@ -260,7 +295,7 @@ const Settings = () => {
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={uploadAvatar}
+                      onChange={handleAvatarSelect}
                       disabled={uploading}
                     />
                   </label>
@@ -374,6 +409,13 @@ const Settings = () => {
           </Card>
         </div>
       </main>
+      
+      <ImageCropper
+        isOpen={cropperOpen}
+        onClose={handleCropperClose}
+        onCrop={handleCropComplete}
+        imageSrc={selectedImage}
+      />
     </div>
   );
 };
