@@ -36,7 +36,8 @@ import {
   Headphones,
   Cpu,
   Database,
-  Monitor
+  Monitor,
+  Download
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -324,6 +325,15 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            <Button
+              onClick={exportPdf}
+              variant="outline"
+              className="transition-smooth"
+              disabled={subscriptions.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export PDF
+            </Button>
             <Button
               onClick={() => setShowAddDialog(true)}
               className="bg-gradient-primary hover:opacity-90 transition-smooth shadow-premium"
