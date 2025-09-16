@@ -365,53 +365,53 @@ const Dashboard = () => {
       <main className="container mx-auto px-4 py-8">
         {/* Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-card shadow-card border-0">
+          <Card className="shadow-card border-0" style={{ background: '#3E1E68' }}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Monthly Total</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-white">Monthly Total</CardTitle>
+              <DollarSign className="h-4 w-4 text-white/70" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{currencySymbol}{monthlyEquivalent.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-white">{currencySymbol}{monthlyEquivalent.toFixed(2)}</div>
+              <p className="text-xs text-white/70">
                 Per month average
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-card shadow-card border-0">
+          <Card className="shadow-card border-0" style={{ background: '#5D2F77' }}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Yearly Total</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-white">Yearly Total</CardTitle>
+              <TrendingUp className="h-4 w-4 text-white/70" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{currencySymbol}{yearlyEquivalent.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-white">{currencySymbol}{yearlyEquivalent.toFixed(2)}</div>
+              <p className="text-xs text-white/70">
                 Annual spending
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-card shadow-card border-0">
+          <Card className="shadow-card border-0" style={{ background: '#E45A92' }}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-white">Active Subscriptions</CardTitle>
+              <CreditCard className="h-4 w-4 text-white/70" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{subscriptions.length}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-white">{subscriptions.length}</div>
+              <p className="text-xs text-white/70">
                 Services tracked
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-card shadow-card border-0">
+          <Card className="shadow-card border-0" style={{ background: '#FFACAC' }}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Upcoming Payments</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-gray-800">Upcoming Payments</CardTitle>
+              <Calendar className="h-4 w-4 text-gray-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{upcomingPayments.length}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-gray-800">{upcomingPayments.length}</div>
+              <p className="text-xs text-gray-600">
                 Next 30 days
               </p>
             </CardContent>
