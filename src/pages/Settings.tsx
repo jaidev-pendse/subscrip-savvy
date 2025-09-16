@@ -108,7 +108,12 @@ const Settings = () => {
 
       if (error) throw error;
 
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      // Merge updates locally and broadcast to the rest of the app
+      const merged: Profile = { ...(profile as Profile), ...updates } as Profile;
+      setProfile(merged);
+      // Notify other pages to update instantly (e.g., Dashboard header avatar/currency)
+      window.dispatchEvent(new CustomEvent('profile-updated' as any, { detail: merged } as any));
+
       toast({
         title: 'Profile updated',
         description: 'Your changes have been saved.',
@@ -144,11 +149,12 @@ const Settings = () => {
     setCropperOpen(false);
     
     try {
-      const fileName = `${user.id}/avatar.jpg`;
+      const version = Date.now();
+      const fileName = `${user.id}/avatar-${version}.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from('user-avatars')
-        .upload(fileName, croppedBlob, { upsert: true });
+        .upload(fileName, croppedBlob, { upsert: true, contentType: 'image/jpeg' });
 
       if (uploadError) throw uploadError;
 
@@ -156,7 +162,7 @@ const Settings = () => {
         .from('user-avatars')
         .getPublicUrl(fileName);
 
-      await updateProfile({ avatar_url: data.publicUrl });
+      await updateProfile({ avatar_url: `${data.publicUrl}?v=${version}` });
       
       toast({
         title: 'Profile photo updated',

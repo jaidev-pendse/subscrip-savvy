@@ -43,6 +43,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { AddSubscriptionDialog } from '@/components/AddSubscriptionDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface Subscription {
   id: string;
@@ -126,6 +128,16 @@ const Dashboard = () => {
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [user]);
+
+  // Listen for instant profile updates (e.g., avatar/currency changes)
+  useEffect(() => {
+    const handler = (e: any) => {
+      const updated = e.detail as Profile;
+      setProfile(updated);
+    };
+    window.addEventListener('profile-updated' as any, handler as any);
+    return () => window.removeEventListener('profile-updated' as any, handler as any);
+  }, []);
 
   const fetchData = async () => {
     await Promise.all([fetchSubscriptions(), fetchProfile()]);
@@ -227,6 +239,39 @@ const Dashboard = () => {
   const monthlyEquivalent = totalMonthly + (totalYearly / 12);
   const yearlyEquivalent = (totalMonthly * 12) + totalYearly;
 
+  const exportPdf = () => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text('Subscriptions Report', 14, 20);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(`User: ${profile?.full_name || user?.email || ''}`, 14, 28);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 34);
+
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    doc.text(`Monthly total: ${currencySymbol}${monthlyEquivalent.toFixed(2)}`, 14, 42);
+    doc.text(`Yearly total: ${currencySymbol}${yearlyEquivalent.toFixed(2)}`, 90, 42);
+
+    autoTable(doc, {
+      startY: 50,
+      head: [['Name', 'Category', 'Billing', 'Cost', 'Next Payment']],
+      body: subscriptions.map((s) => [
+        s.name,
+        s.category,
+        s.billing_cycle,
+        `${currencySymbol}${Number(s.cost).toFixed(2)}`,
+        new Date(s.next_payment_date).toLocaleDateString(),
+      ]),
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      theme: 'striped',
+    });
+
+    doc.save(`subscriptions_report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
   const upcomingPayments = subscriptions
     .filter(sub => {
       const paymentDate = new Date(sub.next_payment_date);
