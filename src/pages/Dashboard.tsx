@@ -43,6 +43,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { AddSubscriptionDialog } from '@/components/AddSubscriptionDialog';
+import { EditSubscriptionDialog } from '@/components/EditSubscriptionDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -107,6 +108,8 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -560,7 +563,7 @@ const Dashboard = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setEditingSubscription(subscription); setShowEditDialog(true); }}>
                               <Edit className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
@@ -601,6 +604,13 @@ const Dashboard = () => {
         open={showAddDialog} 
         onOpenChange={setShowAddDialog}
         onSubscriptionAdded={fetchSubscriptions}
+      />
+
+      <EditSubscriptionDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        subscription={editingSubscription}
+        onSubscriptionUpdated={fetchSubscriptions}
       />
     </div>
   );
