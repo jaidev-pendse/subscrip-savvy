@@ -37,7 +37,9 @@ import {
   Cpu,
   Database,
   Monitor,
-  Download
+  Download,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,6 +47,7 @@ import { toast } from '@/hooks/use-toast';
 import { AddSubscriptionDialog } from '@/components/AddSubscriptionDialog';
 import { EditSubscriptionDialog } from '@/components/EditSubscriptionDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -110,6 +113,7 @@ const Dashboard = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
+  const [showAllPayments, setShowAllPayments] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -424,51 +428,108 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Upcoming Payments */}
           <div className="lg:col-span-2">
-            <Card className="bg-gradient-card shadow-card border-0">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  Upcoming Payments
+            <Card className="bg-gradient-card shadow-card border-0 h-[500px] flex flex-col">
+              <CardHeader className="flex-shrink-0">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 mr-2" />
+                    Upcoming Payments
+                  </div>
+                  {upcomingPayments.length > 2 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAllPayments(!showAllPayments)}
+                      className="h-auto p-1"
+                    >
+                      {showAllPayments ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
                 </CardTitle>
                 <CardDescription>
                   Your next subscription renewals
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-1 overflow-hidden">
                 {upcomingPayments.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">
-                    No upcoming payments in the next 30 days
-                  </p>
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground text-center">
+                      No upcoming payments in the next 30 days
+                    </p>
+                  </div>
                 ) : (
-                  <div className="space-y-4">
-                    {upcomingPayments.slice(0, 5).map((subscription) => {
-                      const daysUntil = Math.ceil(
-                        (new Date(subscription.next_payment_date).getTime() - new Date().getTime()) / 
-                        (1000 * 60 * 60 * 24)
-                      );
-                      
-                      return (
-                        <div key={subscription.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
-                          <div className="flex items-center space-x-3">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              {renderSubscriptionIcon(subscription)}
+                  <div className="h-full">
+                    {/* First 2 items always visible */}
+                    <div className="space-y-4 mb-4">
+                      {upcomingPayments.slice(0, 2).map((subscription) => {
+                        const daysUntil = Math.ceil(
+                          (new Date(subscription.next_payment_date).getTime() - new Date().getTime()) / 
+                          (1000 * 60 * 60 * 24)
+                        );
+                        
+                        return (
+                          <div key={subscription.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
+                            <div className="flex items-center space-x-3">
+                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                {renderSubscriptionIcon(subscription)}
+                              </div>
+                              <div>
+                                <p className="font-medium">{subscription.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `${daysUntil} days`}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium">{subscription.name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `${daysUntil} days`}
-                              </p>
+                            <div className="text-right">
+                              <p className="font-semibold">{currencySymbol}{subscription.cost}</p>
+                              <Badge variant="outline" className="text-xs">
+                                {subscription.billing_cycle}
+                              </Badge>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-semibold">{currencySymbol}{subscription.cost}</p>
-                            <Badge variant="outline" className="text-xs">
-                              {subscription.billing_cycle}
-                            </Badge>
-                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Scrollable area for remaining items */}
+                    {upcomingPayments.length > 2 && showAllPayments && (
+                      <ScrollArea className="h-[240px]">
+                        <div className="space-y-4 pr-4">
+                          {upcomingPayments.slice(2).map((subscription) => {
+                            const daysUntil = Math.ceil(
+                              (new Date(subscription.next_payment_date).getTime() - new Date().getTime()) / 
+                              (1000 * 60 * 60 * 24)
+                            );
+                            
+                            return (
+                              <div key={subscription.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
+                                <div className="flex items-center space-x-3">
+                                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                    {renderSubscriptionIcon(subscription)}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium">{subscription.name}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `${daysUntil} days`}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-semibold">{currencySymbol}{subscription.cost}</p>
+                                  <Badge variant="outline" className="text-xs">
+                                    {subscription.billing_cycle}
+                                  </Badge>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
+                      </ScrollArea>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -477,7 +538,7 @@ const Dashboard = () => {
 
           {/* Category Breakdown */}
           <div>
-            <Card className="bg-gradient-card shadow-card border-0">
+            <Card className="bg-gradient-card shadow-card border-0 h-[500px]">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <PieChart className="h-5 w-5 mr-2" />
