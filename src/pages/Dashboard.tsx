@@ -106,6 +106,25 @@ const currencies = {
   'TRY': '₺', 'RUB': '₽', 'BRL': 'R$', 'ZAR': 'R', 'PLN': 'zł'
 };
 
+const getCategoryIcon = (category: string) => {
+  const iconMap: Record<string, any> = {
+    streaming: Tv,
+    music: Headphones,
+    software: Code,
+    communication: Mail,
+    gaming: Gamepad2,
+    cloud: Cloud,
+    design: Camera,
+    productivity: FileText,
+    finance: DollarSign,
+    security: Shield,
+    other: Globe,
+  };
+  
+  const IconComponent = iconMap[category.toLowerCase()] || Globe;
+  return <IconComponent className="h-5 w-5 text-primary" />;
+};
+
 const Dashboard = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -472,9 +491,9 @@ const Dashboard = () => {
                         );
                         
                         return (
-                          <div key={subscription.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
+                          <div key={subscription.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors">
                             <div className="flex items-center space-x-3">
-                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shadow-sm">
                                 {renderSubscriptionIcon(subscription)}
                               </div>
                               <div>
@@ -486,7 +505,7 @@ const Dashboard = () => {
                             </div>
                             <div className="text-right">
                               <p className="font-semibold">{currencySymbol}{subscription.cost}</p>
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-xs mt-1">
                                 {subscription.billing_cycle}
                               </Badge>
                             </div>
@@ -506,9 +525,9 @@ const Dashboard = () => {
                             );
                             
                             return (
-                              <div key={subscription.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
+                              <div key={subscription.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors">
                                 <div className="flex items-center space-x-3">
-                                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shadow-sm">
                                     {renderSubscriptionIcon(subscription)}
                                   </div>
                                   <div>
@@ -520,7 +539,7 @@ const Dashboard = () => {
                                 </div>
                                 <div className="text-right">
                                   <p className="font-semibold">{currencySymbol}{subscription.cost}</p>
-                                  <Badge variant="outline" className="text-xs">
+                                  <Badge variant="outline" className="text-xs mt-1">
                                     {subscription.billing_cycle}
                                   </Badge>
                                 </div>
@@ -538,8 +557,8 @@ const Dashboard = () => {
 
           {/* Category Breakdown */}
           <div>
-            <Card className="bg-gradient-card shadow-card border-0 h-[500px]">
-              <CardHeader>
+            <Card className="bg-gradient-card shadow-card border-0 h-[500px] flex flex-col">
+              <CardHeader className="flex-shrink-0">
                 <CardTitle className="flex items-center">
                   <PieChart className="h-5 w-5 mr-2" />
                   Category Breakdown
@@ -548,27 +567,52 @@ const Dashboard = () => {
                   Monthly spending by category
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-1 overflow-hidden">
                 {Object.keys(categorySpending).length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">
-                    No subscriptions to analyze
-                  </p>
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground text-center">
+                      No subscriptions to analyze
+                    </p>
+                  </div>
                 ) : (
-                  <div className="space-y-4">
-                    {Object.entries(categorySpending)
-                      .sort(([,a], [,b]) => b - a)
-                      .map(([category, amount]) => {
-                        const percentage = (amount / monthlyEquivalent) * 100;
-                        return (
-                          <div key={category} className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="capitalize font-medium">{category}</span>
-                              <span>{currencySymbol}{amount.toFixed(2)}</span>
-                            </div>
-                            <Progress value={percentage} className="h-2" />
-                          </div>
-                        );
-                      })}
+                  <div className="h-full">
+                    <ScrollArea className="h-full pr-4">
+                      <div className="space-y-4">
+                        {Object.entries(categorySpending)
+                          .sort(([,a], [,b]) => b - a)
+                          .map(([category, amount]) => {
+                            const percentage = (amount / monthlyEquivalent) * 100;
+                            const categoryIcon = getCategoryIcon(category);
+                            return (
+                              <div key={category} className="p-4 rounded-lg bg-secondary/50 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-3">
+                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                      {categoryIcon}
+                                    </div>
+                                    <div>
+                                      <p className="font-medium capitalize">{category}</p>
+                                      <p className="text-sm text-muted-foreground">
+                                        {percentage.toFixed(1)}% of total
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-semibold">{currencySymbol}{amount.toFixed(2)}</p>
+                                    <p className="text-xs text-muted-foreground">per month</p>
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <Progress 
+                                    value={percentage} 
+                                    className="h-2 bg-secondary" 
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </ScrollArea>
                   </div>
                 )}
               </CardContent>
